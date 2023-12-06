@@ -10,7 +10,8 @@ int	main(void)
 		line = tokenize(buf);
 		if (!line)
 			continue;
-		execute(line);
+		if (line -> ncommands > 0)
+			execute(line);
 		fputs(INPUT_PRINT, stdout);
 	}
 	return (0);

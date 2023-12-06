@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #define INPUT_PRINT "\033[93mmsh > \033[0;0m"
 #define ERR_MEMORY "Error allocating memory\n"
@@ -16,6 +17,7 @@ typedef struct s_exec
 	int	**pipe;
 	int	in_fd;
 	int	out_fd;
+	int	err_fd;
 	char	**paths;
 	tline	*line;
 }	t_exec;

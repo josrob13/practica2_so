@@ -66,6 +66,7 @@ static void	initialize_exec(t_exec *exec, tline *line)
 	exec -> line = line;
 	exec -> in_fd = -1;
 	exec -> out_fd = -1;
+	exec -> err_fd = -1;
 	exec -> paths = get_paths();
 }
 
