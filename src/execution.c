@@ -1,10 +1,7 @@
 #include "../minishell.h"
-#include <stdlib.h>
-#include <unistd.h>
 
 static void	wait_all(t_exec *exec);
 static void	initialize_exec(t_exec *exec, tline *line);
-static char	**get_paths(void);
 
 void	execute(tline *line)
 {
@@ -67,21 +64,4 @@ static void	initialize_exec(t_exec *exec, tline *line)
 	exec -> in_fd = -1;
 	exec -> out_fd = -1;
 	exec -> err_fd = -1;
-	exec -> paths = get_paths();
-}
-
-static char	**get_paths(void)
-{
-	char	*path;
-	char	**paths;
-	path = getenv("PATH");
-	if (!path)
-		return (NULL);
-
-	//paths = ft_split(path, ':');
-	return (NULL); //esta se eliminaria
-
-	if (!paths)
-		exit_msg(ERR_MEMORY, 1);
-	return (paths);
 }

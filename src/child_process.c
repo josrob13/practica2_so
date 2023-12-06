@@ -1,12 +1,72 @@
 #include "../minishell.h"
 
 static void	set_redirections(t_exec *exec, int num);
+static char	*get_command(tcommand file);
+static int	is_here(char *file);
+static void	check_directories(char *file);
 
 void	child_process(t_exec exec, int num)
 {
+	char	*command;
+
 	set_redirections(&exec, num);
 	close_all(&exec);
-	exit (0);
+	// if is builtin
+	//     builtin
+	//     exit
+	command = get_command(exec.line -> commands[num]);
+	if (!command) {
+		fputs(exec.line -> commands[num].argv[0], stderr);
+		exit_msg(": command not found\n", 127);
+	}
+	if (execv(command, exec.line -> commands[num].argv))
+		error_msg("Error in execution", 1);
+}
+
+static char	*get_command(tcommand file)
+{
+	char	*command;
+
+	check_directories(file.argv[0]);
+	if (!strcmp("/", file.argv[0])) {
+		if (access(file.argv[0], F_OK | X_OK) == 0)
+			return (file.argv[0]);
+		error_msg(file.argv[0], 126);
+	}
+	if (!strcmp("./", file.argv[0]) || !is_here(file.argv[0])) {
+		if (access(file.argv[0], F_OK | X_OK) == 0)
+			return (file.argv[0]);
+		error_msg(file.argv[0], 126);
+	}
+	if (file.filename)
+		return (file.filename);
+	return (NULL);
+}
+
+static int	is_here(char *file)
+{
+	int	i;
+
+	i = -1;
+	while (file[++i])
+		if (file[i] == '/')
+			return (0);
+	return (1);
+}
+
+static void	check_directories(char *file)
+{
+	DIR	*dir;
+
+	if (!strcmp(".", file))
+		exit_msg(".: not enough arguments\n", 2);
+	if (!strcmp("..", file))
+		exit_msg("..: command not found\n", 2);
+	if ((dir = opendir(file))) {
+		closedir(dir);
+		fputs(file, stderr);
+		exit_msg(": Is a directory\n", 2);
+	}
 }
 
 static void	set_redirections(t_exec *exec, int num)
