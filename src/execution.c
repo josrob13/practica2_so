@@ -2,6 +2,7 @@
 
 static void	wait_all(t_exec *exec);
 static void	initialize_exec(t_exec *exec, tline *line);
+static void do_cd(char *dir);
 
 void	execute(tline *line)
 {
@@ -12,14 +13,18 @@ void	execute(tline *line)
 	// if ncommads == 1 && is buitlin
 	//     builtin
 	// else
-	i = -1;
-	while (++i < line -> ncommands) {
-		exec.pid[i] = fork();
-		if (exec.pid[i] == 0)
-			child_process(exec, i);
+	if (line -> ncommands == 1 && !strcmp("cd", line -> commands[0].argv[0])) {
+		do_cd(line -> commands[0].argv[1]);
+	}else {
+		i = -1;
+		while (++i < line -> ncommands) {
+			exec.pid[i] = fork();
+			if (exec.pid[i] == 0)
+				child_process(exec, i);
+		}
+		close_all(&exec);
+		wait_all(&exec);
 	}
-	close_all(&exec);
-	wait_all(&exec);
 }
 
 void	close_all(t_exec *exec)
@@ -64,4 +69,16 @@ static void	initialize_exec(t_exec *exec, tline *line)
 	exec -> in_fd = -1;
 	exec -> out_fd = -1;
 	exec -> err_fd = -1;
+}
+
+static void do_cd(char *dir)
+{
+	// return rarete, si pudiera haber otra opción mucho mejor
+	if (dir == NULL) {
+		printf("Invalid address.\n");
+		return;
+	}else if (chdir(dir) != 0)
+		error_msg("Error in execution", 1);
+
+	printf("The direction has been succesfully changed.\n");
 }
