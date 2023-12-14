@@ -11,15 +11,17 @@ void	child_process(t_exec exec, int num)
 
 	set_redirections(&exec, num);
 	close_all(&exec);
-	if (strcmp("cd", exec.line -> commands[num].argv[0])) {
-		command = get_command(exec.line -> commands[num]);
-		if (!command) {
-			fputs(exec.line -> commands[num].argv[0], stderr);
-			exit_msg(": command not found\n", 127);
-		}
-		if (execv(command, exec.line -> commands[num].argv))
-			error_msg("Error in execution", 1);
+	command = get_command(exec.line -> commands[num]);
+	if (is_builtin(exec.line -> commands[num].argv[0])) {
+		do_builtin(exec.line -> commands[num]);
+		exit(0);
 	}
+	if (!command) {
+		fputs(exec.line -> commands[num].argv[0], stderr);
+		exit_msg(": command not found\n", 127);
+	}
+	if (execv(command, exec.line -> commands[num].argv))
+		error_msg("Error in execution", 1);
 }
 
 static char	*get_command(tcommand file)

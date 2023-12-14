@@ -10,18 +10,8 @@
 #include <string.h>
 #include <dirent.h>
 
-// INPUT_PRINT no se usaría más
 #define INPUT_PRINT "\033[93mmsh > \033[0;0m"
 #define ERR_MEMORY "Error allocating memory\n"
-
-// Macro para printear la direccion cada rato
-#define PROMPT_PREFIX "\033[93mmsh:"
-#define PROMPT_MESSAGE \
-    ({ \
-        char cwd[1024]; \
-        getcwd(cwd, sizeof(cwd)); \
-        printf("%s%s > \033[0;0m", PROMPT_PREFIX, cwd); \
-    })
 
 typedef struct s_exec
 {
@@ -36,6 +26,8 @@ typedef struct s_exec
 //execution.c
 void	execute(tline *line);
 void	close_all(t_exec *exec);
+int		is_builtin(char *name);
+void	do_builtin(tcommand command);
 
 //child_process.c
 void	child_process(t_exec exec, int num);

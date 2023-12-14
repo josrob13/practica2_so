@@ -3,6 +3,7 @@
 static void	wait_all(t_exec *exec);
 static void	initialize_exec(t_exec *exec, tline *line);
 static void do_cd(char *dir);
+static void do_exit();
 
 void	execute(tline *line)
 {
@@ -10,11 +11,8 @@ void	execute(tline *line)
 	int	i;
 
 	initialize_exec(&exec, line);
-	// if ncommads == 1 && is buitlin
-	//     builtin
-	// else
-	if (line -> ncommands == 1 && !strcmp("cd", line -> commands[0].argv[0])) {
-		do_cd(line -> commands[0].argv[1]);
+	if (line -> ncommands == 1 && is_builtin(line -> commands[0].argv[0])) {
+		do_builtin(line -> commands[0]);
 	}else {
 		i = -1;
 		while (++i < line -> ncommands) {
@@ -71,14 +69,38 @@ static void	initialize_exec(t_exec *exec, tline *line)
 	exec -> err_fd = -1;
 }
 
+int		is_builtin(char *name)
+{
+	if (!strcmp("cd", name) || !strcmp("exit", name))
+		return 1;
+
+	return 0;
+}
+
+void	do_builtin(tcommand command)
+{
+	if (!strcmp("cd", command.argv[0]))
+		do_cd(command.argv[1]);
+	else if (!strcmp("exit", command.argv[0]))
+		do_exit();
+}
+
+static void do_exit()
+{
+	exit(0);
+}
+
 static void do_cd(char *dir)
 {
-	// return rarete, si pudiera haber otra opción mucho mejor
-	if (dir == NULL) {
-		printf("Invalid address.\n");
-		return;
-	}else if (chdir(dir) != 0)
-		error_msg("Error in execution", 1);
+	char cwd[1024];
+	char *home = getenv("HOME");
 
-	printf("The direction has been succesfully changed.\n");
+	if (dir == NULL)
+		dir = home;
+	if (chdir(dir) != 0)
+		printf("Error while changing directory.\n");
+	else {
+		getcwd(cwd, sizeof(cwd));
+		printf("%s\n", cwd);
+	}
 }
