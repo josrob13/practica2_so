@@ -15,6 +15,14 @@
 
 extern int	g_sig;
 
+typedef struct s_list
+{
+	int		id;
+	int		*pids;
+	char		*line;
+	struct s_list	*next;
+}	t_list;
+
 typedef struct s_exec
 {
 	pid_t	*pid;
