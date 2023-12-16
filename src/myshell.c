@@ -28,8 +28,12 @@ int	main(void)
 	fputs(INPUT_PRINT, stdout);
 	while (fgets(buf, 1024, stdin)) {
 		line = tokenize(buf);
-		if (line -> ncommands > 0)
+		if (line -> ncommands > 0) {
+			//if (es un comando en background)
+			//    lo añado a la lista bg
+			//    y las demas movidas necesarias con los waitpid
 			execute(line);
+		}
 		fputs(INPUT_PRINT, stdout);
 		g_sig = 1;
 	}
