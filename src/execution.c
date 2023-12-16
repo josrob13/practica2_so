@@ -1,9 +1,12 @@
 #include "../minishell.h"
+#include <dirent.h>
+#include <linux/limits.h>
+#include <stdio.h>
 
 static void	wait_all(t_exec *exec);
 static void	initialize_exec(t_exec *exec, tline *line);
-static void do_cd(char *dir);
-static void do_exit();
+static void	do_cd(char **argv);
+static void	do_exit();
 
 void	execute(tline *line)
 {
@@ -80,7 +83,7 @@ int		is_builtin(char *name)
 void	do_builtin(tcommand command)
 {
 	if (!strcmp("cd", command.argv[0]))
-		do_cd(command.argv[1]);
+		do_cd(command.argv);
 	else if (!strcmp("exit", command.argv[0]))
 		do_exit();
 }
@@ -90,17 +93,34 @@ static void do_exit()
 	exit(0);
 }
 
-static void do_cd(char *dir)
+static void do_cd(char **argv)
 {
-	char cwd[1024];
-	char *home = getenv("HOME");
+	char	cwd[PATH_MAX];
+	char	*chdirectory;
+	DIR	*dir;
 
-	if (dir == NULL)
-		dir = home;
-	if (chdir(dir) != 0)
-		printf("Error while changing directory.\n");
-	else {
-		getcwd(cwd, sizeof(cwd));
-		printf("%s\n", cwd);
+	if (argv[1] && argv[2]) {
+		fputs("cd: too many arguments\n", stderr);
+		return ;
+	}
+	if (!argv[1]) {
+		chdirectory = getenv("HOME");
+		if (!chdirectory) {
+			fputs("cd: HOME not set\n", stderr);
+			return ;
+		}
+	} else
+		chdirectory = argv[1];
+	dir = opendir(chdirectory);
+	if (!dir) {
+		fputs("cd: ", stderr);
+		perror(chdirectory);
+		return ;
+	}
+	closedir(dir);
+	if (chdir(chdirectory) == -1) {
+		fputs("cd: ", stderr);
+		perror(chdirectory);
+		return ;
 	}
 }
