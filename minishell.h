@@ -13,6 +13,8 @@
 #define INPUT_PRINT "\033[93mmsh > \033[0;0m"
 #define ERR_MEMORY "Error allocating memory\n"
 
+extern int	g_sig;
+
 typedef struct s_exec
 {
 	pid_t	*pid;

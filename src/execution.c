@@ -19,6 +19,7 @@ void	execute(tline *line)
 	}else {
 		i = -1;
 		while (++i < line -> ncommands) {
+			g_sig = 0;
 			exec.pid[i] = fork();
 			if (exec.pid[i] == 0)
 				child_process(exec, i);
