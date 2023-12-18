@@ -5,7 +5,7 @@ static char	*get_command(tcommand file);
 static int	is_here(char *file);
 static void	check_directories(char *file);
 
-void	child_process(t_exec exec, int num)
+void	child_process(t_exec exec, int num, t_list **bg)
 {
 	char	*command;
 
@@ -13,7 +13,7 @@ void	child_process(t_exec exec, int num)
 	close_all(&exec);
 	command = get_command(exec.line -> commands[num]);
 	if (is_builtin(exec.line -> commands[num].argv[0])) {
-		do_builtin(exec.line -> commands[num]);
+		do_builtin(exec.line -> commands[num], bg);
 		exit(0);
 	}
 	if (!command) {

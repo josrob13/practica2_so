@@ -34,13 +34,13 @@ typedef struct s_exec
 }	t_exec;
 
 //execution.c
-void	execute(tline *line);
+void	execute(tline *line, t_list **bg, char *buf);
 void	close_all(t_exec *exec);
-int		is_builtin(char *name);
-void	do_builtin(tcommand command);
+int	is_builtin(char *name);
+void	do_builtin(tcommand command, t_list **bg);
 
 //child_process.c
-void	child_process(t_exec exec, int num);
+void	child_process(t_exec exec, int num, t_list **bg);
 
 //error.c
 void	exit_msg(char *msg, int val);
