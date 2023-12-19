@@ -12,9 +12,8 @@ static void	do_fg(tcommand command, t_list **bg);
 static void	do_jobs(t_list *bg);
 static void	wait_fg(t_list *bg, int id);
 static void	print_fg(t_list *bg, int id);
-static void	bgdelete(t_list **bg, int id);
 static void	do_cd(char **argv);
-static void	do_exit();
+static void	do_exit(t_list **bg);
 
 void	execute(tline *line, t_list **bg, char *buf)
 {
@@ -149,7 +148,7 @@ void	do_builtin(tcommand command, t_list **bg)
 	if (!strcmp("cd", command.argv[0]))
 		do_cd(command.argv);
 	else if (!strcmp("exit", command.argv[0]))
-		do_exit();
+		do_exit(bg);
 	else if (!strcmp("jobs", command.argv[0]))
 		do_jobs(*bg);
 	else if (!strcmp("fg", command.argv[0]))
@@ -237,7 +236,7 @@ static void	print_fg(t_list *bg, int id)
 	fputs("\n", stderr);
 }
 
-static void	bgdelete(t_list **bg, int id)
+void	bgdelete(t_list **bg, int id)
 {
 	t_list	*aux, *aux2;
 
@@ -284,8 +283,9 @@ static void	do_jobs(t_list *bg)
 	}
 }
 
-static void do_exit()
+static void do_exit(t_list **bg)
 {
+	kill_childs(bg);
 	exit(0);
 }
 
