@@ -1,8 +1,6 @@
 #include "../minishell.h"
 
 static void	sig_handler_input(int signal);
-void	bgdelete(t_list **bg, int index);
-void	print_lst(t_list **bg);
 
 int	g_sig = 1;
 

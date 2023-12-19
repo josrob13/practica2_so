@@ -7,6 +7,7 @@ static void	wait_all(t_exec *exec);
 static void	bgadd(t_list **bg, pid_t *pid, char *buf);
 static int	is_id_free(t_list *bg, int i);
 static void	initialize_exec(t_exec *exec, tline *line);
+static void	free_exec(t_exec *exec, tline *line);
 static void	do_fg(tcommand command, t_list **bg);
 static void	do_jobs(t_list *bg);
 static void	wait_fg(t_list *bg, int id);
@@ -37,6 +38,7 @@ void	execute(tline *line, t_list **bg, char *buf)
 		else
 			wait_all(&exec);
 	}
+	free_exec(&exec, line);
 }
 
 void	close_all(t_exec *exec)
@@ -122,6 +124,17 @@ static void	initialize_exec(t_exec *exec, tline *line)
 	exec -> in_fd = -1;
 	exec -> out_fd = -1;
 	exec -> err_fd = -1;
+}
+
+static void	free_exec(t_exec *exec, tline *line)
+{
+	int	i;
+
+	i = -1;
+	while (++i < line -> ncommands - 1)
+		free(exec -> pipe[i]);
+	free(exec -> pipe);
+	free(exec -> pid);
 }
 
 int		is_builtin(char *name)
