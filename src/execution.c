@@ -89,8 +89,11 @@ static void	bgadd(t_list **bg, pid_t *pid, char *buf)
 	*bg = node;
 	fputs("[", stdout);
 	fputc(node -> id + '0', stdout);
-	fputs("]\t ", stdout);
-	fputs(node -> line, stdout);
+	fputs("] ", stdout);
+	i = -1;
+	while (pid[++i] != -1)
+		fprintf(stdout, "%d ", pid[i]);
+	fputs("\n", stdout);
 }
 
 static int	is_id_free(t_list *bg, int i)
