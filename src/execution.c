@@ -272,7 +272,7 @@ static void	bgdelete(t_list **bg, int id)
 	} while (aux);
 }
 
-static void	do_jobs(t_list *bg)
+static void	do_jobs2(t_list *bg)
 {
 	/*
 	int i, j, printed;
@@ -323,57 +323,52 @@ static void	do_jobs(t_list *bg)
 		}
 	}*/
 
-	print_mins(bg);
+	//print_mins(bg);
 	
 }
 
-static void print_mins(t_list *l)
+static void do_jobs(t_list *l)
 {
-	int min, i, j, pos, saved;
-	t_list *aux, *printed;
+	int i, j, pos, printed;
+	t_list *aux;
 
 	i = 0;
-	printed = NULL;
-	if (l)
-	{
+	j = 1;
+	if (l) {
 		while (i < length(l))
 		{
-			//min = l -> id;
+			printf("HEMOS LLEGADO A LA ITERACION: %i", i);
 			aux = l;
-			//pos = 0;
-			//saved = 0;
-			j = 1;
-			while (aux)
-			{
-				if (aux -> id < min && !is_in(aux -> id, printed)) {
-					min = aux -> id;
-					saved = pos;
-				}
-				aux = aux -> next;
-				pos++;
-			}
-			aux = l;
+			printed = 0;
 			pos = 0;
-			while (pos < saved)
+			while (aux && !printed)
 			{
-				aux = aux -> next;
-				pos++;
-			}/*
-			printf("El id del minimo es: %i\n", min);
-			printf("La posicion del minimo es: %i\n", saved);
-			printf("La tarea es: %s\n", aux -> line);*/
-			fputs("[", stdout);
-			fputc(min + '0', stdout);
-			fputs("]", stdout);
-			if (saved == 0)
-				fputs("+", stdout);
-			else if (saved == 1)
-				fputs("-", stdout);
-			else
-				fputs(" ", stdout);
-			fputs(" Running\t ", stdout);
-			fputs(aux -> line, stdout);
-			printed = add(printed, min);
+				if (aux -> id == j) {
+					fputs("[", stdout);
+					fputc(aux -> id + '0', stdout);
+					fputs("]", stdout);
+					if (pos == 0)
+						fputs("+", stdout);
+					else if (pos == 1)
+						fputs("-", stdout);
+					else
+						fputs(" ", stdout);
+					fputs(" Running\t ", stdout);
+					fputs(aux -> line, stdout);
+					printed = 1;
+					j++;
+				} else{
+					if (aux -> next) {
+						if (aux -> next -> id >= j) {
+							aux = aux -> next;
+							pos++;
+						} else
+							j++;
+					}
+					else
+						j++;
+				}
+			}
 			i++;
 		}
 	}
