@@ -9,7 +9,7 @@ static int	is_id_free(t_list *bg, int i);
 static void	initialize_exec(t_exec *exec, tline *line);
 static void	free_exec(t_exec *exec, tline *line);
 static void	do_fg(tcommand command, t_list **bg);
-static void	do_jobs(t_list *bg);
+static void	do_jobs(t_list **bg);
 static void	wait_fg(t_list *bg, int id);
 static void	print_fg(t_list *bg, int id);
 static void	do_cd(char **argv);
@@ -153,7 +153,7 @@ void	do_builtin(tcommand command, t_list **bg)
 	else if (!strcmp("exit", command.argv[0]))
 		do_exit(bg);
 	else if (!strcmp("jobs", command.argv[0]))
-		do_jobs(*bg);
+		do_jobs(bg);
 	else if (!strcmp("fg", command.argv[0]))
 		do_fg(command, bg);
 }
@@ -265,13 +265,38 @@ void	bgdelete(t_list **bg, int id)
 	} while (aux);
 }
 
-static void	do_jobs(t_list *bg)
+static void	check_jobs(t_list **bg)
+{
+	int	i, finished;
+	t_list	*aux, *aux2;
+
+	aux = *bg;
+	while (aux) {
+		i = -1;
+		finished = 1;
+		while (aux -> pids[++i] != -1)
+			if (waitpid(aux -> pids[i], NULL, WNOHANG) == 0)
+				finished = 0;
+		if (finished) {
+			aux2 = aux;
+			aux = aux -> next;
+			bgdelete(bg, aux2 -> id);
+		}
+		else
+			aux = aux -> next;
+	}
+}
+
+static void	do_jobs(t_list **bg)
 {
 	int	count = 0;
+	t_list	*aux;
 
-	while (bg) {
+	check_jobs(bg);
+	aux = *bg;
+	while (aux) {
 		fputs("[", stdout);
-		fputc(bg -> id + '0', stdout);
+		fputc(aux -> id + '0', stdout);
 		fputs("]", stdout);
 		if (count == 0)
 			fputs("+", stdout);
@@ -280,8 +305,8 @@ static void	do_jobs(t_list *bg)
 		else
 			fputs(" ", stdout);
 		fputs(" Running\t ", stdout);
-		fputs(bg -> line, stdout);
-		bg = bg -> next;
+		fputs(aux -> line, stdout);
+		aux = aux -> next;
 		count++;
 	}
 }
