@@ -28,8 +28,11 @@ void	execute(tline *line, t_list **bg, char *buf)
 		while (++i < line -> ncommands) {
 			g_sig = 0;
 			exec.pid[i] = fork();
-			if (exec.pid[i] == 0)
+			if (exec.pid[i] == 0) {
+				if (line -> background == 1)
+					signal(SIGINT, SIG_IGN);
 				child_process(exec, i, bg);
+			}
 		}
 		close_all(&exec);
 		if (line -> background == 1)
