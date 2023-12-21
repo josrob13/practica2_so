@@ -2,6 +2,8 @@
 #include <dirent.h>
 #include <linux/limits.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 static void	wait_all(t_exec *exec);
 static void	bgadd(t_list **bg, pid_t *pid, char *buf);
@@ -15,6 +17,11 @@ static void	print_fg(t_list *bg, int id);
 static void	bgdelete(t_list **bg, int id);
 static void	do_cd(char **argv);
 static void	do_exit();
+static void do_umask(tcommand command);
+static int length(t_list *bg);
+static int is_in(int e, t_list *l);
+static t_list *add(t_list *l, int e);
+static void print_mins(t_list *l);
 
 void	execute(tline *line, t_list **bg, char *buf)
 {
@@ -139,7 +146,7 @@ static void	free_exec(t_exec *exec, tline *line)
 
 int		is_builtin(char *name)
 {
-	if (!strcmp("cd", name) || !strcmp("exit", name) || !strcmp("jobs", name) || !strcmp("fg", name))
+	if (!strcmp("cd", name) || !strcmp("exit", name) || !strcmp("jobs", name) || !strcmp("fg", name) || !strcmp("umask", name))
 		return 1;
 	return 0;
 }
@@ -154,6 +161,8 @@ void	do_builtin(tcommand command, t_list **bg)
 		do_jobs(*bg);
 	else if (!strcmp("fg", command.argv[0]))
 		do_fg(command, bg);
+	else if (!strcmp("umask", command.argv[0]))
+		do_umask(command);
 }
 
 static void	do_fg(tcommand command, t_list **bg)
@@ -265,23 +274,158 @@ static void	bgdelete(t_list **bg, int id)
 
 static void	do_jobs(t_list *bg)
 {
+	/*
+	int i, j, printed;
+	t_list *aux;
 	int	count = 0;
-
-	while (bg) {
+	
+	while (aux) {
 		fputs("[", stdout);
-		fputc(bg -> id + '0', stdout);
+		fputc(aux -> id + '0', stdout);
 		fputs("]", stdout);
-		if (count == 0)
+		if (!aux -> next)
 			fputs("+", stdout);
-		else if (count == 1)
+		else if (!aux -> next -> next)
 			fputs("-", stdout);
 		else
 			fputs(" ", stdout);
 		fputs(" Running\t ", stdout);
-		fputs(bg -> line, stdout);
-		bg = bg -> next;
+		fputs(aux -> line, stdout);
+		aux = aux -> next;
 		count++;
 	}
+
+	j = 0;
+	while (j < length(bg))
+	{
+		i = 0;
+		printed = 0;
+		aux = bg;
+		while (i < length(bg) && !printed)
+		{
+			if (i == (length(bg) - j)) {
+				fputs("[", stdout);
+				fputc(aux -> id + '0', stdout);
+				fputs("]", stdout);
+				if (i == 0)
+					fputs("+", stdout);
+				else if (i == 1)
+					fputs("-", stdout);
+				else
+					fputs(" ", stdout);
+				fputs(" Running\t ", stdout);
+				fputs(aux -> line, stdout);
+				j++;
+				printed = 1;
+			}
+			i++;
+			aux = aux -> next;
+		}
+	}*/
+
+	print_mins(bg);
+	
+}
+
+static void print_mins(t_list *l)
+{
+	int min, i, j, pos, saved;
+	t_list *aux, *printed;
+
+	i = 0;
+	printed = NULL;
+	if (l)
+	{
+		while (i < length(l))
+		{
+			//min = l -> id;
+			aux = l;
+			//pos = 0;
+			//saved = 0;
+			j = 1;
+			while (aux)
+			{
+				if (aux -> id < min && !is_in(aux -> id, printed)) {
+					min = aux -> id;
+					saved = pos;
+				}
+				aux = aux -> next;
+				pos++;
+			}
+			aux = l;
+			pos = 0;
+			while (pos < saved)
+			{
+				aux = aux -> next;
+				pos++;
+			}/*
+			printf("El id del minimo es: %i\n", min);
+			printf("La posicion del minimo es: %i\n", saved);
+			printf("La tarea es: %s\n", aux -> line);*/
+			fputs("[", stdout);
+			fputc(min + '0', stdout);
+			fputs("]", stdout);
+			if (saved == 0)
+				fputs("+", stdout);
+			else if (saved == 1)
+				fputs("-", stdout);
+			else
+				fputs(" ", stdout);
+			fputs(" Running\t ", stdout);
+			fputs(aux -> line, stdout);
+			printed = add(printed, min);
+			i++;
+		}
+	}
+	
+	
+}
+
+static int is_in(int e, t_list *l)
+{
+	t_list *aux;
+
+	aux = l;
+	while (aux)
+	{
+		if (aux -> id == e) {
+			//printf("El elemento %i ya ha sido printeado", e);
+			return 1;
+		}
+		aux = aux -> next;
+	}
+
+	return 0;
+}
+
+static t_list *add(t_list *l, int e)
+{
+	t_list *node;
+
+	node = malloc(sizeof(t_list));
+	if (!node)
+		return NULL;
+	node -> id = e;
+	node -> next = l;
+	l = node;
+
+	return l;
+}
+
+static int length(t_list *bg)
+{
+	int total;
+	t_list *aux;
+	
+	aux = bg;
+	total = 0;
+	while (aux)
+	{
+		total++;
+		aux = aux -> next;
+	}
+	
+	return total;
 }
 
 static void do_exit()
@@ -318,5 +462,21 @@ static void do_cd(char **argv)
 		fputs("cd: ", stderr);
 		perror(chdirectory);
 		return ;
+	}
+}
+
+static void do_umask(tcommand command) {
+	char mask_str[10];
+
+	if (command.argc < 2) {
+        mode_t old_mask = umask(0); // Obtener la máscara actual, devuelve la antigua y como es 0 no la cambia
+        umask(old_mask);
+        snprintf(mask_str, sizeof(mask_str), "%o", old_mask); // Transformar a string
+        fputs(mask_str, stdout); // Imprimir la máscara actual
+        fputs("\n", stdout);
+	}
+	else {
+    	mode_t mask = strtol(command.argv[1], NULL, 8); // Convierte el string octal a modo_t, y se usa para cambiar la máscara
+    	mode_t prev_mask = umask(mask);
 	}
 }
