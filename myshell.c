@@ -97,6 +97,7 @@ static void	kill_childs(t_list **bg)
 
 static void	sig_handler_input(int signal)
 {
+	(void) signal; //Eliminar warning
 	if (g_sig == 1)
 		write(1, "\n\033[93mmsh > \033[0;0m", 19);
 }
@@ -296,7 +297,7 @@ static void	wait_fg(t_list *bg, int id)
 
 static void	print_fg(t_list *bg, int id)
 {
-	t_list	*aux, *aux2;
+	t_list	*aux;
 
 	aux = bg;
 	if (!aux) {
@@ -322,7 +323,6 @@ static void	print_fg(t_list *bg, int id)
 			fputs(aux -> line, stdout);
 			return ;
 		}
-		aux2 = aux;
 		aux = aux -> next;
 	} while (aux);
 	fputs("fg: job not found: ", stderr);
@@ -432,7 +432,6 @@ static void do_exit(t_list **bg)
 
 static void do_cd(char **argv)
 {
-	char	cwd[PATH_MAX];
 	char	*chdirectory;
 	DIR	*dir;
 
@@ -462,19 +461,20 @@ static void do_cd(char **argv)
 	}
 }
 
-static void do_umask(tcommand command) {
+static void do_umask(tcommand command)
+{
 	char  mask_str[10];
+	mode_t old_mask, mask;
 
 	if (command.argc < 2) {
-        mode_t old_mask = umask(0); // Obtener la máscara actual, devuelve la antigua y como es 0 no la cambia
-        umask(old_mask);
-        snprintf(mask_str, sizeof(mask_str), "%o", old_mask); // Transformar a string
-        fputs(mask_str, stdout); // Imprimir la máscara actual
-        fputs("\n", stdout);
-	}
-	else {
-    	mode_t mask = strtol(command.argv[1], NULL, 8); // Convierte el string octal a modo_t, y se usa para cambiar la máscara
-    	mode_t prev_mask = umask(mask);
+		old_mask = umask(0); // Obtener la máscara actual, devuelve la antigua y como es 0 no la cambia
+		umask(old_mask);
+		snprintf(mask_str, sizeof(mask_str), "%o", old_mask); // Transformar a string
+		fputs(mask_str, stdout); // Imprimir la máscara actual
+		fputs("\n", stdout);
+	} else {
+		mask = strtol(command.argv[1], NULL, 8); // Convierte el string octal a modo_t, y se usa para cambiar la máscara
+		umask(mask);
 	}
 }
 
@@ -499,8 +499,6 @@ static void	child_process(t_exec exec, int num, t_list **bg)
 
 static char	*get_command(tcommand file)
 {
-	char	*command;
-
 	check_directories(file.argv[0]);
 	if (!strcmp("/", file.argv[0])) {
 		if (access(file.argv[0], F_OK | X_OK) == 0)

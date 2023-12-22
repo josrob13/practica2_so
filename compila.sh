@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gcc -c myshell.c -o myshell.o
+gcc -Wall -Werror -Wextra -c myshell.c -o myshell.o
 gcc myshell.o -o msh -I. -L. -lparser -no-pie
 
 rm -rf *.o
