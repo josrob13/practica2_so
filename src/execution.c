@@ -16,7 +16,7 @@ static void	check_jobs(t_list **bg);
 static void	wait_fg(t_list *bg, int id);
 static void	print_fg(t_list *bg, int id);
 static void	do_cd(char **argv);
-static void	do_exit();
+static void	do_exit(t_list **bg);
 static void	do_umask(tcommand command);
 static int	length(t_list *bg);
 
