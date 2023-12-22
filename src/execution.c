@@ -11,14 +11,15 @@ static int	is_id_free(t_list *bg, int i);
 static void	initialize_exec(t_exec *exec, tline *line);
 static void	free_exec(t_exec *exec, tline *line);
 static void	do_fg(tcommand command, t_list **bg);
-static void	do_jobs(t_list *bg);
+static void	do_jobs(t_list **bg);
+static void	check_jobs(t_list **bg);
 static void	wait_fg(t_list *bg, int id);
 static void	print_fg(t_list *bg, int id);
-static void	bgdelete(t_list **bg, int id);
 static void	do_cd(char **argv);
 static void	do_exit();
 static void	do_umask(tcommand command);
 static int	length(t_list *bg);
+
 
 void	execute(tline *line, t_list **bg, char *buf)
 {
@@ -33,8 +34,11 @@ void	execute(tline *line, t_list **bg, char *buf)
 		while (++i < line -> ncommands) {
 			g_sig = 0;
 			exec.pid[i] = fork();
-			if (exec.pid[i] == 0)
+			if (exec.pid[i] == 0) {
+				if (line -> background == 1)
+					signal(SIGINT, SIG_IGN);
 				child_process(exec, i, bg);
+			}
 		}
 		close_all(&exec);
 		if (line -> background == 1)
@@ -91,8 +95,11 @@ static void	bgadd(t_list **bg, pid_t *pid, char *buf)
 	*bg = node;
 	fputs("[", stdout);
 	fputc(node -> id + '0', stdout);
-	fputs("]\t ", stdout);
-	fputs(node -> line, stdout);
+	fputs("] ", stdout);
+	i = -1;
+	while (pid[++i] != -1)
+		fprintf(stdout, "%d ", pid[i]);
+	fputs("\n", stdout);
 }
 
 static int	is_id_free(t_list *bg, int i)
@@ -153,9 +160,9 @@ void	do_builtin(tcommand command, t_list **bg)
 	if (!strcmp("cd", command.argv[0]))
 		do_cd(command.argv);
 	else if (!strcmp("exit", command.argv[0]))
-		do_exit();
+		do_exit(bg);
 	else if (!strcmp("jobs", command.argv[0]))
-		do_jobs(*bg);
+		do_jobs(bg);
 	else if (!strcmp("fg", command.argv[0]))
 		do_fg(command, bg);
 	else if (!strcmp("umask", command.argv[0]))
@@ -243,7 +250,7 @@ static void	print_fg(t_list *bg, int id)
 	fputs("\n", stderr);
 }
 
-static void	bgdelete(t_list **bg, int id)
+void	bgdelete(t_list **bg, int id)
 {
 	t_list	*aux, *aux2;
 
@@ -274,6 +281,7 @@ static void do_jobs(t_list *bg)
 	int	i, j, len;
 	t_list	*aux;
 
+  check_jobs(bg);
 	if (!bg)
 		return ;
 	len = length(bg);
@@ -310,12 +318,32 @@ static int length(t_list *bg)
 	while (bg) {
 		total++;
 		bg = bg -> next;
+
+static void	check_jobs(t_list **bg)
+{
+	int	i, finished;
+	t_list	*aux, *aux2;
+
+	aux = *bg;
+	while (aux) {
+		i = -1;
+		finished = 1;
+		while (aux -> pids[++i] != -1)
+			if (waitpid(aux -> pids[i], NULL, WNOHANG) == 0)
+				finished = 0;
+		if (finished) {
+			aux2 = aux;
+			aux = aux -> next;
+			bgdelete(bg, aux2 -> id);
+		}
+		else
+			aux = aux -> next;
 	}
-	return total;
 }
 
-static void do_exit()
+static void do_exit(t_list **bg)
 {
+	kill_childs(bg);
 	exit(0);
 }
 
@@ -352,7 +380,7 @@ static void do_cd(char **argv)
 }
 
 static void do_umask(tcommand command) {
-	char mask_str[10];
+	char  mask_str[10];
 
 	if (command.argc < 2) {
         mode_t old_mask = umask(0); // Obtener la máscara actual, devuelve la antigua y como es 0 no la cambia

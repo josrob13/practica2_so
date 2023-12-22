@@ -38,6 +38,8 @@ void	execute(tline *line, t_list **bg, char *buf);
 void	close_all(t_exec *exec);
 int	is_builtin(char *name);
 void	do_builtin(tcommand command, t_list **bg);
+void	bgdelete(t_list **bg, int id);
+void	kill_childs(t_list **bg);
 
 //child_process.c
 void	child_process(t_exec exec, int num, t_list **bg);
