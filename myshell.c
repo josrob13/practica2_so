@@ -83,7 +83,7 @@ int	main(void)
 	return (0);
 }
 
-void	kill_childs(t_list **bg)
+static void	kill_childs(t_list **bg)
 {
 	int	i;
 
@@ -101,7 +101,7 @@ static void	sig_handler_input(int signal)
 		write(1, "\n\033[93mmsh > \033[0;0m", 19);
 }
 
-void	execute(tline *line, t_list **bg, char *buf)
+static void	execute(tline *line, t_list **bg, char *buf)
 {
 	t_exec	exec;
 	int	i;
@@ -129,7 +129,7 @@ void	execute(tline *line, t_list **bg, char *buf)
 	free_exec(&exec, line);
 }
 
-void	close_all(t_exec *exec)
+static void	close_all(t_exec *exec)
 {
 	int	i;
 
@@ -228,14 +228,14 @@ static void	free_exec(t_exec *exec, tline *line)
 	free(exec -> pid);
 }
 
-int		is_builtin(char *name)
+static int		is_builtin(char *name)
 {
 	if (!strcmp("cd", name) || !strcmp("exit", name) || !strcmp("jobs", name) || !strcmp("fg", name) || !strcmp("umask", name))
 		return 1;
 	return 0;
 }
 
-void	do_builtin(tcommand command, t_list **bg)
+static void	do_builtin(tcommand command, t_list **bg)
 {
 	if (!strcmp("cd", command.argv[0]))
 		do_cd(command.argv);
@@ -330,7 +330,7 @@ static void	print_fg(t_list *bg, int id)
 	fputs("\n", stderr);
 }
 
-void	bgdelete(t_list **bg, int id)
+static void	bgdelete(t_list **bg, int id)
 {
 	t_list	*aux, *aux2;
 
@@ -478,7 +478,7 @@ static void do_umask(tcommand command) {
 	}
 }
 
-void	child_process(t_exec exec, int num, t_list **bg)
+static void	child_process(t_exec exec, int num, t_list **bg)
 {
 	char	*command;
 
@@ -571,13 +571,13 @@ static void	set_redirections(t_exec *exec, int num)
 			dup2(exec -> pipe[num][1], 1);
 }
 
-void	exit_msg(char *msg, int val)
+static void	exit_msg(char *msg, int val)
 {
 	fputs(msg, stderr);
 	exit (val);
 }
 
-void	error_msg(char *msg, int val)
+static void	error_msg(char *msg, int val)
 {
 	perror(msg);
 	exit (val);
