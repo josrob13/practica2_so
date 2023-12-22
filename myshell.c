@@ -1,10 +1,48 @@
-#include "../minishell.h"
+#include "parser.h"
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <string.h>
+#include <dirent.h>
 #include <dirent.h>
 #include <linux/limits.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#define INPUT_PRINT "\033[93mmsh > \033[0;0m"
+#define ERR_MEMORY "Error allocating memory\n"
+
+typedef struct s_list
+{
+	int		id;
+	int		*pids;
+	char		*line;
+	struct s_list	*next;
+}	t_list;
+
+typedef struct s_exec
+{
+	pid_t	*pid;
+	int	**pipe;
+	int	in_fd;
+	int	out_fd;
+	int	err_fd;
+	tline	*line;
+}	t_exec;
+
+static void	sig_handler_input(int signal);
+static void	execute(tline *line, t_list **bg, char *buf);
+static void	close_all(t_exec *exec);
+static int	is_builtin(char *name);
+static void	do_builtin(tcommand command, t_list **bg);
+static void	bgdelete(t_list **bg, int id);
+static void	kill_childs(t_list **bg);
+static void	child_process(t_exec exec, int num, t_list **bg);
+static void	exit_msg(char *msg, int val);
+static void	error_msg(char *msg, int val);
 static void	wait_all(t_exec *exec);
 static void	bgadd(t_list **bg, pid_t *pid, char *buf);
 static int	is_id_free(t_list *bg, int i);
@@ -19,7 +57,51 @@ static void	do_cd(char **argv);
 static void	do_exit(t_list **bg);
 static void	do_umask(tcommand command);
 static int	length(t_list *bg);
+static void	set_redirections(t_exec *exec, int num);
+static char	*get_command(tcommand file);
+static int	is_here(char *file);
+static void	check_directories(char *file);
 
+int	g_sig = 1;
+
+int	main(void)
+{
+	char	buf[1024];
+	tline	*line;
+	t_list	*bg = NULL;
+
+	signal(SIGINT, sig_handler_input);
+	fputs(INPUT_PRINT, stdout);
+	while (fgets(buf, 1024, stdin)) {
+		line = tokenize(buf);
+		if (line -> ncommands > 0) {
+			execute(line, &bg, buf);
+		}
+		fputs(INPUT_PRINT, stdout);
+		g_sig = 1;
+	}
+	if (bg)
+		kill_childs(&bg);
+	return (0);
+}
+
+void	kill_childs(t_list **bg)
+{
+	int	i;
+
+	while (*bg) {
+		i = -1;
+		while ((*bg) -> pids[++i] != -1)
+			kill((*bg) -> pids[i], SIGTERM);
+		bgdelete(bg, -1);
+	}
+}
+
+static void	sig_handler_input(int signal)
+{
+	if (g_sig == 1)
+		write(1, "\n\033[93mmsh > \033[0;0m", 19);
+}
 
 void	execute(tline *line, t_list **bg, char *buf)
 {
@@ -396,4 +478,109 @@ static void do_umask(tcommand command) {
     	mode_t mask = strtol(command.argv[1], NULL, 8); // Convierte el string octal a modo_t, y se usa para cambiar la máscara
     	mode_t prev_mask = umask(mask);
 	}
+}
+
+void	child_process(t_exec exec, int num, t_list **bg)
+{
+	char	*command;
+
+	set_redirections(&exec, num);
+	close_all(&exec);
+	command = get_command(exec.line -> commands[num]);
+	if (is_builtin(exec.line -> commands[num].argv[0])) {
+		do_builtin(exec.line -> commands[num], bg);
+		exit(0);
+	}
+	if (!command) {
+		fputs(exec.line -> commands[num].argv[0], stderr);
+		exit_msg(": command not found\n", 127);
+	}
+	if (execv(command, exec.line -> commands[num].argv))
+		error_msg("Error in execution", 1);
+}
+
+static char	*get_command(tcommand file)
+{
+	char	*command;
+
+	check_directories(file.argv[0]);
+	if (!strcmp("/", file.argv[0])) {
+		if (access(file.argv[0], F_OK | X_OK) == 0)
+			return (file.argv[0]);
+		error_msg(file.argv[0], 126);
+	}
+	if (!strcmp("./", file.argv[0]) || !is_here(file.argv[0])) {
+		if (access(file.argv[0], F_OK | X_OK) == 0)
+			return (file.argv[0]);
+		error_msg(file.argv[0], 126);
+	}
+	if (file.filename)
+		return (file.filename);
+	return (NULL);
+}
+
+static int	is_here(char *file)
+{
+	int	i;
+
+	i = -1;
+	while (file[++i])
+		if (file[i] == '/')
+			return (0);
+	return (1);
+}
+
+static void	check_directories(char *file)
+{
+	DIR	*dir;
+
+	if (!strcmp(".", file))
+		exit_msg(".: not enough arguments\n", 2);
+	if (!strcmp("..", file))
+		exit_msg("..: command not found\n", 2);
+	if ((dir = opendir(file))) {
+		closedir(dir);
+		fputs(file, stderr);
+		exit_msg(": Is a directory\n", 2);
+	}
+}
+
+static void	set_redirections(t_exec *exec, int num)
+{
+	if (exec -> line -> redirect_input && num == 0) {
+		exec -> in_fd = open(exec -> line -> redirect_input, O_RDONLY);
+		if (exec -> in_fd < 0)
+			error_msg(exec -> line -> redirect_input, 1);
+		dup2(exec -> in_fd, 0);
+	}
+	if (exec -> line -> redirect_output && num == exec -> line -> ncommands - 1) {
+		exec -> out_fd = open(exec -> line -> redirect_output, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+		if (exec -> out_fd < 0)
+			error_msg(exec -> line -> redirect_input, 1);
+		dup2(exec -> out_fd, 1);
+	}
+	if (exec -> line -> redirect_error && num == exec -> line -> ncommands - 1) {
+		exec -> err_fd = open(exec -> line -> redirect_error, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+		if (exec -> err_fd < 0)
+			error_msg(exec -> line -> redirect_input, 1);
+		dup2(exec -> err_fd, 2);
+	}
+	if (num != 0)
+		if (exec -> in_fd == -1)
+			dup2(exec -> pipe[num - 1][0], 0);
+	if (num != exec -> line -> ncommands - 1)
+		if (exec -> out_fd == -1)
+			dup2(exec -> pipe[num][1], 1);
+}
+
+void	exit_msg(char *msg, int val)
+{
+	fputs(msg, stderr);
+	exit (val);
+}
+
+void	error_msg(char *msg, int val)
+{
+	perror(msg);
+	exit (val);
 }
