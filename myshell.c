@@ -6,9 +6,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <dirent.h>
-#include <dirent.h>
 #include <linux/limits.h>
-#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
