@@ -17,11 +17,8 @@ static void	print_fg(t_list *bg, int id);
 static void	bgdelete(t_list **bg, int id);
 static void	do_cd(char **argv);
 static void	do_exit();
-static void do_umask(tcommand command);
-static int length(t_list *bg);
-static int is_in(int e, t_list *l);
-static t_list *add(t_list *l, int e);
-static void print_mins(t_list *l);
+static void	do_umask(tcommand command);
+static int	length(t_list *bg);
 
 void	execute(tline *line, t_list **bg, char *buf)
 {
@@ -272,154 +269,48 @@ static void	bgdelete(t_list **bg, int id)
 	} while (aux);
 }
 
-static void	do_jobs2(t_list *bg)
+static void do_jobs(t_list *bg)
 {
-	/*
-	int i, j, printed;
-	t_list *aux;
-	int	count = 0;
-	
-	while (aux) {
-		fputs("[", stdout);
-		fputc(aux -> id + '0', stdout);
-		fputs("]", stdout);
-		if (!aux -> next)
-			fputs("+", stdout);
-		else if (!aux -> next -> next)
-			fputs("-", stdout);
-		else
-			fputs(" ", stdout);
-		fputs(" Running\t ", stdout);
-		fputs(aux -> line, stdout);
-		aux = aux -> next;
-		count++;
-	}
+	int	i, j, len;
+	t_list	*aux;
 
-	j = 0;
-	while (j < length(bg))
-	{
-		i = 0;
-		printed = 0;
+	if (!bg)
+		return ;
+	len = length(bg);
+	i = 0;
+	j = 1;
+	while (i < len) {
 		aux = bg;
-		while (i < length(bg) && !printed)
-		{
-			if (i == (length(bg) - j)) {
+		while (aux) {
+			if (aux -> id == j) {
 				fputs("[", stdout);
 				fputc(aux -> id + '0', stdout);
 				fputs("]", stdout);
-				if (i == 0)
+				if (bg -> id == aux -> id)
 					fputs("+", stdout);
-				else if (i == 1)
+				else if (bg -> next && bg -> next -> id == aux -> id)
 					fputs("-", stdout);
 				else
 					fputs(" ", stdout);
 				fputs(" Running\t ", stdout);
 				fputs(aux -> line, stdout);
-				j++;
-				printed = 1;
+				i++;
 			}
-			i++;
 			aux = aux -> next;
 		}
-	}*/
-
-	//print_mins(bg);
-	
-}
-
-static void do_jobs(t_list *l)
-{
-	int i, j, pos, printed;
-	t_list *aux;
-
-	i = 0;
-	j = 1;
-	if (l) {
-		while (i < length(l))
-		{
-			printf("HEMOS LLEGADO A LA ITERACION: %i", i);
-			aux = l;
-			printed = 0;
-			pos = 0;
-			while (aux && !printed)
-			{
-				if (aux -> id == j) {
-					fputs("[", stdout);
-					fputc(aux -> id + '0', stdout);
-					fputs("]", stdout);
-					if (pos == 0)
-						fputs("+", stdout);
-					else if (pos == 1)
-						fputs("-", stdout);
-					else
-						fputs(" ", stdout);
-					fputs(" Running\t ", stdout);
-					fputs(aux -> line, stdout);
-					printed = 1;
-					j++;
-				} else{
-					if (aux -> next) {
-						if (aux -> next -> id >= j) {
-							aux = aux -> next;
-							pos++;
-						} else
-							j++;
-					}
-					else
-						j++;
-				}
-			}
-			i++;
-		}
+		j++;
 	}
-	
-	
-}
-
-static int is_in(int e, t_list *l)
-{
-	t_list *aux;
-
-	aux = l;
-	while (aux)
-	{
-		if (aux -> id == e) {
-			//printf("El elemento %i ya ha sido printeado", e);
-			return 1;
-		}
-		aux = aux -> next;
-	}
-
-	return 0;
-}
-
-static t_list *add(t_list *l, int e)
-{
-	t_list *node;
-
-	node = malloc(sizeof(t_list));
-	if (!node)
-		return NULL;
-	node -> id = e;
-	node -> next = l;
-	l = node;
-
-	return l;
 }
 
 static int length(t_list *bg)
 {
 	int total;
-	t_list *aux;
 	
-	aux = bg;
 	total = 0;
-	while (aux)
-	{
+	while (bg) {
 		total++;
-		aux = aux -> next;
+		bg = bg -> next;
 	}
-	
 	return total;
 }
 
