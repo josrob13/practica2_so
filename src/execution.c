@@ -276,27 +276,27 @@ void	bgdelete(t_list **bg, int id)
 	} while (aux);
 }
 
-static void do_jobs(t_list *bg)
+static void do_jobs(t_list **bg)
 {
 	int	i, j, len;
 	t_list	*aux;
 
 	check_jobs(bg);
-	if (!bg)
+	if (!(*bg))
 		return ;
-	len = length(bg);
+	len = length(*bg);
 	i = 0;
 	j = 1;
 	while (i < len) {
-		aux = bg;
+		aux = *bg;
 		while (aux) {
 			if (aux -> id == j) {
 				fputs("[", stdout);
 				fputc(aux -> id + '0', stdout);
 				fputs("]", stdout);
-				if (bg -> id == aux -> id)
+				if ((*bg) -> id == aux -> id)
 					fputs("+", stdout);
-				else if (bg -> next && bg -> next -> id == aux -> id)
+				else if ((*bg) -> next && (*bg) -> next -> id == aux -> id)
 					fputs("-", stdout);
 				else
 					fputs(" ", stdout);
