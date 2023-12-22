@@ -229,7 +229,7 @@ static void	free_exec(t_exec *exec, tline *line)
 	free(exec -> pid);
 }
 
-static int		is_builtin(char *name)
+static int	is_builtin(char *name)
 {
 	if (!strcmp("cd", name) || !strcmp("exit", name) || !strcmp("jobs", name) || !strcmp("fg", name) || !strcmp("umask", name))
 		return 1;
@@ -279,14 +279,18 @@ static void	wait_fg(t_list *bg, int id)
 	if (!aux)
 		return ;
 	else if (id == -1 || aux -> id == id) {
-		while (bg -> pids[++i])
+		while (bg -> pids[++i] != -1) {
+			fprintf(stdout, "Espero pid: %d\n", bg -> pids[i]);
 			waitpid(bg -> pids[i], NULL, 0);
+		}
 		bg = aux -> next;
 		return ;
 	} else do {
 		if (aux -> id == id) {
-			while (bg -> pids[++i])
+			while (bg -> pids[++i] != -1) {
+				fprintf(stdout, "Espero pid: %d\n", bg -> pids[i]);
 				waitpid(bg -> pids[i], NULL, 0);
+			}
 			aux2 -> next = aux -> next;
 			return ;
 		}
