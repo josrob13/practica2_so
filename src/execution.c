@@ -281,7 +281,7 @@ static void do_jobs(t_list *bg)
 	int	i, j, len;
 	t_list	*aux;
 
-  check_jobs(bg);
+	check_jobs(bg);
 	if (!bg)
 		return ;
 	len = length(bg);
@@ -318,6 +318,9 @@ static int length(t_list *bg)
 	while (bg) {
 		total++;
 		bg = bg -> next;
+	}
+	return (total);
+}
 
 static void	check_jobs(t_list **bg)
 {
