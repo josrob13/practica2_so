@@ -62,6 +62,7 @@ static void	check_directories(char *file);
 
 int	g_sig = 1;
 
+//Funcion principal
 int	main(void)
 {
 	char	buf[1024];
@@ -83,6 +84,7 @@ int	main(void)
 	return (0);
 }
 
+//Mata a los procesos hijos que estén en el background y libera la estructura del background
 static void	kill_childs(t_list **bg)
 {
 	int	i;
@@ -95,6 +97,7 @@ static void	kill_childs(t_list **bg)
 	}
 }
 
+//Funcion para gestionar ctrl+c
 static void	sig_handler_input(int signal)
 {
 	(void) signal; //Eliminar warning
@@ -102,6 +105,7 @@ static void	sig_handler_input(int signal)
 		write(1, "\n\033[93mmsh > \033[0;0m", 19);
 }
 
+//Función encargada de la ejecucion de cada comando
 static void	execute(tline *line, t_list **bg, char *buf)
 {
 	t_exec	exec;
@@ -130,6 +134,7 @@ static void	execute(tline *line, t_list **bg, char *buf)
 	free_exec(&exec, line);
 }
 
+//Cierra todos los pipes que no sean necesarios
 static void	close_all(t_exec *exec)
 {
 	int	i;
@@ -141,6 +146,7 @@ static void	close_all(t_exec *exec)
 	}
 }
 
+//Espera a que terminen todos los procesos hijos del comando
 static void	wait_all(t_exec *exec)
 {
 	int	i;
@@ -150,6 +156,7 @@ static void	wait_all(t_exec *exec)
 		waitpid(exec -> pid[i], NULL, 0);
 }
 
+//Añade un comando a la estructura del background
 static void	bgadd(t_list **bg, pid_t *pid, char *buf)
 {
 	t_list	*node;
@@ -183,6 +190,7 @@ static void	bgadd(t_list **bg, pid_t *pid, char *buf)
 	fputs("\n", stdout);
 }
 
+//Comprueba si una id está libre en la estructura de background
 static int	is_id_free(t_list *bg, int i)
 {
 	while (bg) {
@@ -193,6 +201,7 @@ static int	is_id_free(t_list *bg, int i)
 	return (1);
 }
 
+//Inicializa la estructira exec
 static void	initialize_exec(t_exec *exec, tline *line)
 {
 	int	i;
@@ -218,6 +227,7 @@ static void	initialize_exec(t_exec *exec, tline *line)
 	exec -> err_fd = -1;
 }
 
+//Libera toda la memoria dinamica allocada anteriormente en el exec
 static void	free_exec(t_exec *exec, tline *line)
 {
 	int	i;
@@ -229,6 +239,7 @@ static void	free_exec(t_exec *exec, tline *line)
 	free(exec -> pid);
 }
 
+//Comprueba si un string es un builtin o no
 static int	is_builtin(char *name)
 {
 	if (!strcmp("cd", name) || !strcmp("exit", name) || !strcmp("jobs", name) || !strcmp("fg", name) || !strcmp("umask", name))
@@ -236,6 +247,7 @@ static int	is_builtin(char *name)
 	return 0;
 }
 
+//Ejecuta un builtin
 static void	do_builtin(tcommand command, t_list **bg)
 {
 	if (!strcmp("cd", command.argv[0]))
@@ -250,6 +262,7 @@ static void	do_builtin(tcommand command, t_list **bg)
 		do_umask(command);
 }
 
+//Manda un comando en el background al foreground
 static void	do_fg(tcommand command, t_list **bg)
 {
 	int	id;
@@ -269,6 +282,7 @@ static void	do_fg(tcommand command, t_list **bg)
 	bgdelete(bg, id);
 }
 
+//Espera a un comando en el background
 static void	wait_fg(t_list *bg, int id)
 {
 	t_list	*aux, *aux2;
@@ -279,18 +293,14 @@ static void	wait_fg(t_list *bg, int id)
 	if (!aux)
 		return ;
 	else if (id == -1 || aux -> id == id) {
-		while (bg -> pids[++i] != -1) {
-			fprintf(stdout, "Espero pid: %d\n", bg -> pids[i]);
+		while (bg -> pids[++i] != -1)
 			waitpid(bg -> pids[i], NULL, 0);
-		}
 		bg = aux -> next;
 		return ;
 	} else do {
 		if (aux -> id == id) {
-			while (bg -> pids[++i] != -1) {
-				fprintf(stdout, "Espero pid: %d\n", bg -> pids[i]);
+			while (bg -> pids[++i] != -1)
 				waitpid(bg -> pids[i], NULL, 0);
-			}
 			aux2 -> next = aux -> next;
 			return ;
 		}
@@ -299,6 +309,7 @@ static void	wait_fg(t_list *bg, int id)
 	} while (aux);
 }
 
+//Printeo por salida estandar el comando que se pasa al foreground
 static void	print_fg(t_list *bg, int id)
 {
 	t_list	*aux;
@@ -334,6 +345,7 @@ static void	print_fg(t_list *bg, int id)
 	fputs("\n", stderr);
 }
 
+//Elimino un comando de la estructura del background
 static void	bgdelete(t_list **bg, int id)
 {
 	t_list	*aux, *aux2;
@@ -360,6 +372,7 @@ static void	bgdelete(t_list **bg, int id)
 	} while (aux);
 }
 
+//Muestra por salida estandar todos los comandos en el background
 static void do_jobs(t_list **bg)
 {
 	int	i, j, len;
@@ -394,6 +407,7 @@ static void do_jobs(t_list **bg)
 	}
 }
 
+//Devuelve la longitud de la estructura de procesos en el background
 static int length(t_list *bg)
 {
 	int total;
@@ -406,6 +420,7 @@ static int length(t_list *bg)
 	return (total);
 }
 
+//Comprueba y elimina los comandos en el background que ya hayan terminado
 static void	check_jobs(t_list **bg)
 {
 	int	i, finished;
@@ -428,12 +443,14 @@ static void	check_jobs(t_list **bg)
 	}
 }
 
+//Sale del programa principal
 static void do_exit(t_list **bg)
 {
 	kill_childs(bg);
 	exit(0);
 }
 
+//Cambia de directorio
 static void do_cd(char **argv)
 {
 	char	*chdirectory;
@@ -465,6 +482,7 @@ static void do_cd(char **argv)
 	}
 }
 
+//Cambia permisos de creación de archivos
 static void do_umask(tcommand command)
 {
 	char  mask_str[10];
@@ -482,6 +500,7 @@ static void do_umask(tcommand command)
 	}
 }
 
+//Funcion que gestiona cada proceso hijo
 static void	child_process(t_exec exec, int num, t_list **bg)
 {
 	char	*command;
@@ -501,6 +520,7 @@ static void	child_process(t_exec exec, int num, t_list **bg)
 		error_msg("Error in execution", 1);
 }
 
+//Devuelve la ruta de el ejecutable a utilizar segun su ruta relaita / absoluta / PATH
 static char	*get_command(tcommand file)
 {
 	check_directories(file.argv[0]);
@@ -519,6 +539,7 @@ static char	*get_command(tcommand file)
 	return (NULL);
 }
 
+//Comprueba si un archivo / directorio está en el directorio de trabajo actual
 static int	is_here(char *file)
 {
 	int	i;
@@ -530,6 +551,7 @@ static int	is_here(char *file)
 	return (1);
 }
 
+//Comprueba si el string file es un archivo o un directorio
 static void	check_directories(char *file)
 {
 	DIR	*dir;
@@ -545,6 +567,7 @@ static void	check_directories(char *file)
 	}
 }
 
+//Gestiona las redirecciones correspondientes
 static void	set_redirections(t_exec *exec, int num)
 {
 	if (exec -> line -> redirect_input && num == 0) {
@@ -573,12 +596,14 @@ static void	set_redirections(t_exec *exec, int num)
 			dup2(exec -> pipe[num][1], 1);
 }
 
+//Funcion para terminar el programa con un mensaje de error
 static void	exit_msg(char *msg, int val)
 {
 	fputs(msg, stderr);
 	exit (val);
 }
 
+//Funcion para terminar el programa con un mensaje de error e informacion de dicho error
 static void	error_msg(char *msg, int val)
 {
 	perror(msg);
