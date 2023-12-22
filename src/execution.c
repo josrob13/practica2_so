@@ -2,6 +2,8 @@
 #include <dirent.h>
 #include <linux/limits.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 static void	wait_all(t_exec *exec);
 static void	bgadd(t_list **bg, pid_t *pid, char *buf);
@@ -10,10 +12,14 @@ static void	initialize_exec(t_exec *exec, tline *line);
 static void	free_exec(t_exec *exec, tline *line);
 static void	do_fg(tcommand command, t_list **bg);
 static void	do_jobs(t_list **bg);
+static void	check_jobs(t_list **bg);
 static void	wait_fg(t_list *bg, int id);
 static void	print_fg(t_list *bg, int id);
 static void	do_cd(char **argv);
 static void	do_exit(t_list **bg);
+static void	do_umask(tcommand command);
+static int	length(t_list *bg);
+
 
 void	execute(tline *line, t_list **bg, char *buf)
 {
@@ -144,7 +150,7 @@ static void	free_exec(t_exec *exec, tline *line)
 
 int		is_builtin(char *name)
 {
-	if (!strcmp("cd", name) || !strcmp("exit", name) || !strcmp("jobs", name) || !strcmp("fg", name))
+	if (!strcmp("cd", name) || !strcmp("exit", name) || !strcmp("jobs", name) || !strcmp("fg", name) || !strcmp("umask", name))
 		return 1;
 	return 0;
 }
@@ -159,6 +165,8 @@ void	do_builtin(tcommand command, t_list **bg)
 		do_jobs(bg);
 	else if (!strcmp("fg", command.argv[0]))
 		do_fg(command, bg);
+	else if (!strcmp("umask", command.argv[0]))
+		do_umask(command);
 }
 
 static void	do_fg(tcommand command, t_list **bg)
@@ -268,6 +276,52 @@ void	bgdelete(t_list **bg, int id)
 	} while (aux);
 }
 
+static void do_jobs(t_list *bg)
+{
+	int	i, j, len;
+	t_list	*aux;
+
+	check_jobs(bg);
+	if (!bg)
+		return ;
+	len = length(bg);
+	i = 0;
+	j = 1;
+	while (i < len) {
+		aux = bg;
+		while (aux) {
+			if (aux -> id == j) {
+				fputs("[", stdout);
+				fputc(aux -> id + '0', stdout);
+				fputs("]", stdout);
+				if (bg -> id == aux -> id)
+					fputs("+", stdout);
+				else if (bg -> next && bg -> next -> id == aux -> id)
+					fputs("-", stdout);
+				else
+					fputs(" ", stdout);
+				fputs(" Running\t ", stdout);
+				fputs(aux -> line, stdout);
+				i++;
+			}
+			aux = aux -> next;
+		}
+		j++;
+	}
+}
+
+static int length(t_list *bg)
+{
+	int total;
+	
+	total = 0;
+	while (bg) {
+		total++;
+		bg = bg -> next;
+	}
+	return (total);
+}
+
 static void	check_jobs(t_list **bg)
 {
 	int	i, finished;
@@ -287,30 +341,6 @@ static void	check_jobs(t_list **bg)
 		}
 		else
 			aux = aux -> next;
-	}
-}
-
-static void	do_jobs(t_list **bg)
-{
-	int	count = 0;
-	t_list	*aux;
-
-	check_jobs(bg);
-	aux = *bg;
-	while (aux) {
-		fputs("[", stdout);
-		fputc(aux -> id + '0', stdout);
-		fputs("]", stdout);
-		if (count == 0)
-			fputs("+", stdout);
-		else if (count == 1)
-			fputs("-", stdout);
-		else
-			fputs(" ", stdout);
-		fputs(" Running\t ", stdout);
-		fputs(aux -> line, stdout);
-		aux = aux -> next;
-		count++;
 	}
 }
 
@@ -349,5 +379,21 @@ static void do_cd(char **argv)
 		fputs("cd: ", stderr);
 		perror(chdirectory);
 		return ;
+	}
+}
+
+static void do_umask(tcommand command) {
+	char  mask_str[10];
+
+	if (command.argc < 2) {
+        mode_t old_mask = umask(0); // Obtener la máscara actual, devuelve la antigua y como es 0 no la cambia
+        umask(old_mask);
+        snprintf(mask_str, sizeof(mask_str), "%o", old_mask); // Transformar a string
+        fputs(mask_str, stdout); // Imprimir la máscara actual
+        fputs("\n", stdout);
+	}
+	else {
+    	mode_t mask = strtol(command.argv[1], NULL, 8); // Convierte el string octal a modo_t, y se usa para cambiar la máscara
+    	mode_t prev_mask = umask(mask);
 	}
 }
